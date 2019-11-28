@@ -12,7 +12,6 @@ class PlayerModel extends Model
 
     protected $fillable = [
         'id',
-        'balance',
-        'can_proceed'
+        'balance'
     ];
 }
