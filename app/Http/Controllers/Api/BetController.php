@@ -68,9 +68,7 @@ class BetController extends Controller
     {
         $response = [];
 
-        $player = $this->getPlayerData($request->player_id);
-
-        $errors_global = $this->validateGlobal($request, $player);
+        $errors_global = $this->validateGlobal($request);
         $errors_selection = $this->validateSelections($request->selections);
 
         if (!is_null($errors_global) || !is_null($errors_selection)) {
@@ -92,6 +90,7 @@ class BetController extends Controller
 
         sleep(rand(1, 30));
 
+        $player = $this->getPlayerData($request->player_id);
         $this->placeBet($request, $player);
 
         return response()->json([], 201);
@@ -109,7 +108,7 @@ class BetController extends Controller
         return $player;
     }
 
-    public function validateGlobal($request, $player)
+    public function validateGlobal($request)
     {
         $errors = null;
         $total_odds = 1;
@@ -121,16 +120,9 @@ class BetController extends Controller
             "selections.*.odds" => "required|numeric"
         ];
 
-        if ($player->can_proceed) {
-            $player->can_proceed = 0;
-            $player->save();
-        } else {
-            $errors[] = $this->error[10];
-        }
-
         $validator = Validator::make($request->all(), $rules);
         if ($validator->fails()) {
-            $errors[] = $this->error[1];
+            return $errors[] = $this->error[1];
         }
 
         $validator = Validator::make($request->all(), ["stake_amount" => "numeric|min:0.3"]);
@@ -161,6 +153,7 @@ class BetController extends Controller
             $errors[] = $this->error[9];
         }
 
+        $player = $this->getPlayerData($request->player_id);
         if ($player->balance < $request->stake_amount) {
             $errors[] = $this->error[11];
         }
@@ -208,7 +201,6 @@ class BetController extends Controller
         );
 
         $player->balance -= $request->stake_amount;
-        $player->can_proceed = 1;
         $player->save();
     }
 }
