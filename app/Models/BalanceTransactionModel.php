@@ -10,8 +10,8 @@ class BalanceTransactionModel extends Model
     public $timestamps = false;
 
     protected $fillable = [
-    	'player_id',
-    	'amount',
-    	'amount_before'
+        'player_id',
+        'amount',
+        'amount_before'
     ];
 }

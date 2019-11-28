@@ -10,8 +10,8 @@ class BetModel extends Model
     public $timestamps = false;
 
     protected $fillable = [
-    	'id',
-    	'stake_amount',
-    	'created_at'
+        'id',
+        'stake_amount',
+        'created_at'
     ];
 }

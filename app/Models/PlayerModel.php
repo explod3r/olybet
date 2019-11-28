@@ -11,8 +11,8 @@ class PlayerModel extends Model
     public $timestamps = false;
 
     protected $fillable = [
-    	'id',
-    	'balance',
-    	'can_proceed'
+        'id',
+        'balance',
+        'can_proceed'
     ];
 }

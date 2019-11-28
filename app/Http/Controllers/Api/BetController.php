@@ -66,7 +66,6 @@ class BetController extends Controller
 
     public function getBetRequest(Request $request)
     {
-
         $response = [];
 
         $player = $this->getPlayerData($request->player_id);
@@ -74,47 +73,46 @@ class BetController extends Controller
         $errors_global = $this->validateGlobal($request, $player);
         $errors_selection = $this->validateSelections($request->selections);
 
-        if(!is_null($errors_global) || !is_null($errors_selection)){
-                	
-        	$response['player_id'] = $request->player_id;
-        	$response['stake_amount'] = $request->stake_amount;
+        if (!is_null($errors_global) || !is_null($errors_selection)) {
+            $response['player_id'] = $request->player_id;
+            $response['stake_amount'] = $request->stake_amount;
 
             if (!is_null($errors_global)) {
                 $response['errors'] = $errors_global;
             }
 
-            if(!is_null($errors_selection)){
-            	$response['selections'] = array_replace_recursive($request->selections, $errors_selection);
+            if (!is_null($errors_selection)) {
+                $response['selections'] = array_replace_recursive($request->selections, $errors_selection);
             } else {
-            	$response['selections'] = $request->selections;
+                $response['selections'] = $request->selections;
             }
 
             return response()->json($response, 400);
         }
 
-    	// sleep(rand(1,30));
+        sleep(rand(1, 30));
 
-    	$result = $this->placeBet($request, $player);
+        $this->placeBet($request, $player);
 
         return response()->json([], 201);
     }
 
-    public function getPlayerData($player_id){
+    public function getPlayerData($player_id)
+    {
+        $player = PlayerModel::firstOrCreate(['id' => $player_id]);
+        
+        if (is_null($player->balance)) {
+            $player->balance = 1000;
+            $player->can_proceed = 1;
+        }
 
-    	$player = PlayerModel::firstOrCreate(['id' => $player_id]);
-    	
-    	if(is_null($player->balance)){
-    		$player->balance = 1000;
-    		$player->can_proceed = 1;
-    	}
-
-    	return $player;
+        return $player;
     }
 
     public function validateGlobal($request, $player)
     {
-    	$errors = null;
-    	$total_odds = 1;
+        $errors = null;
+        $total_odds = 1;
         $rules = [
             "player_id" => "required|integer",
             "stake_amount" => "required|numeric",
@@ -123,11 +121,11 @@ class BetController extends Controller
             "selections.*.odds" => "required|numeric"
         ];
 
-        if($player->can_proceed){
-        	$player->can_proceed = 0;
-        	$player->save();
+        if ($player->can_proceed) {
+            $player->can_proceed = 0;
+            $player->save();
         } else {
-        	$errors[] = $this->error[10];
+            $errors[] = $this->error[10];
         }
 
         $validator = Validator::make($request->all(), $rules);
@@ -135,36 +133,36 @@ class BetController extends Controller
             $errors[] = $this->error[1];
         }
 
-		$validator = Validator::make($request->all(), ["stake_amount" => "numeric|min:0.3"]); 
-		if ($validator->fails()) {
+        $validator = Validator::make($request->all(), ["stake_amount" => "numeric|min:0.3"]);
+        if ($validator->fails()) {
             $errors[] = $this->error[2];
         }
 
-        $validator = Validator::make($request->all(), ["stake_amount" => "numeric|max:10000"]); 
-		if ($validator->fails()) {
+        $validator = Validator::make($request->all(), ["stake_amount" => "numeric|max:10000"]);
+        if ($validator->fails()) {
             $errors[] = $this->error[3];
         }
 
-        $validator = Validator::make($request->all(), ["selections" => "array|min:1"]); 
-		if ($validator->fails()) {
+        $validator = Validator::make($request->all(), ["selections" => "array|min:1"]);
+        if ($validator->fails()) {
             $errors[] = $this->error[4];
         }
 
-        $validator = Validator::make($request->all(), ["selections" => "array|max:20"]); 
-		if ($validator->fails()) {
+        $validator = Validator::make($request->all(), ["selections" => "array|max:20"]);
+        if ($validator->fails()) {
             $errors[] = $this->error[5];
         }
 
-        foreach($request->selections as $selection){
-        	$total_odds *= $selection['odds'];
+        foreach ($request->selections as $selection) {
+            $total_odds *= $selection['odds'];
         }
 
-        if($request->stake_amount * $total_odds > 20000){
-        	$errors[] = $this->error[9];
+        if ($request->stake_amount * $total_odds > 20000) {
+            $errors[] = $this->error[9];
         }
 
-        if($player->balance < $request->stake_amount){
-        	$errors[] = $this->error[11];
+        if ($player->balance < $request->stake_amount) {
+            $errors[] = $this->error[11];
         }
 
         return $errors;
@@ -172,7 +170,7 @@ class BetController extends Controller
 
     public function validateSelections($selections)
     {
-    	$errors = null;
+        $errors = null;
         foreach ($selections as $key => $selection) {
             if ($selection['odds'] < 1) {
                 $errors[$key]['errors'][] = $this->error[6];
@@ -190,27 +188,27 @@ class BetController extends Controller
         return $errors;
     }
 
-    public function placeBet($request, $player){
-    	$bet = BetModel::create(['stake_amount' => $request->stake_amount, 'created_at' => date('Y-m-d H:i:s')]);
+    public function placeBet($request, $player)
+    {
+        $bet = BetModel::create(['stake_amount' => $request->stake_amount, 'created_at' => date('Y-m-d H:i:s')]);
 
-    	foreach($request->selections as $selection){
-    		$selection = BetSelectionsModel::create(
-    			['bet_id' => $bet->id,
-    			'selection_id' => $selection['id'],
-    			'odds' => $selection['odds']
-    		]);
-    	}
+        foreach ($request->selections as $selection) {
+            $selection = BetSelectionsModel::create(
+                ['bet_id' => $bet->id,
+                'selection_id' => $selection['id'],
+                'odds' => $selection['odds']
+            ]
+            );
+        }
 
-    	$transaction = BalanceTransactionModel::create(
-    		['player_id' => $request->player_id,
-    		'amount' => $player->balance - $request->stake_amount,
-    		'amount_before' => $player->balance]
-    	);
+        $transaction = BalanceTransactionModel::create(
+            ['player_id' => $request->player_id,
+            'amount' => $player->balance - $request->stake_amount,
+            'amount_before' => $player->balance]
+        );
 
-    	$player->balance -= $request->stake_amount;
-    	$player->can_proceed = 1;
+        $player->balance -= $request->stake_amount;
+        $player->can_proceed = 1;
         $player->save();
-
-        return $bet;
     }
 }
