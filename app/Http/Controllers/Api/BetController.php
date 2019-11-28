@@ -88,8 +88,6 @@ class BetController extends Controller
             return response()->json($response, 400);
         }
 
-        sleep(rand(1, 30));
-
         $player = $this->getPlayerData($request->player_id);
         $this->placeBet($request, $player);
 
