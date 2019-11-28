@@ -16,6 +16,7 @@ class CreatePlayerTable extends Migration
         Schema::create('player', function (Blueprint $table) {
             $table->unsignedBigInteger('id')->primary();
             $table->float('balance', 12, 2)->default(1000);
+            $table->boolean('can_proceed')->default(true);
         });
     }
 

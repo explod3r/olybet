@@ -14,7 +14,7 @@ class CreateBetSelectionsTable extends Migration
     public function up()
     {
         Schema::create('bet_selections', function (Blueprint $table) {
-            $table->unsignedInteger('id');
+            $table->bigIncrements('id');
             $table->integer('bet_id')->index();
             $table->integer('selection_id')->index();
             $table->float('odds', 10, 3);

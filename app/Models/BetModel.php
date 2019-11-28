@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class BetModel extends Model
 {
     protected $table = 'bet';
+    public $timestamps = false;
 
     protected $fillable = [
     	'id',
