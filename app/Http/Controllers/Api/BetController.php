@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
+use App\Models\PlayerPendingStatus;
 use App\Models\PlayerModel;
 use App\Models\BetModel;
 use App\Models\BetSelectionsModel;
@@ -91,6 +92,8 @@ class BetController extends Controller
         $player = $this->getPlayerData($request->player_id);
         $this->placeBet($request, $player);
 
+        PlayerPendingStatus::delete(['player_id' => $request->player_id]);
+
         return response()->json([], 201);
     }
 
@@ -117,6 +120,12 @@ class BetController extends Controller
             "selections.*.id" => "required|integer",
             "selections.*.odds" => "required|numeric"
         ];
+
+        if (PlayerPendingStatus::find($request->player_id)) {
+            return $errors[] = $this->error[10];
+        } else {
+            PlayerPendingStatus::create(['player_id' => $request->player_id]);
+        }
 
         $validator = Validator::make($request->all(), $rules);
         if ($validator->fails()) {
